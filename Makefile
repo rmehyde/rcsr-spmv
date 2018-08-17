@@ -1,17 +1,29 @@
-CC=g++
 NVCC=nvcc
-CXXFLAGS= -fopenmp
-CUDAFLAGS= -gencode arch=compute_61,code=sm_61
-#CUDAFLAGS += -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 #uncomment for compatability
-LIBS= -lcusparse
+
+GPUARCHFLAGS= -gencode arch=compute_61,code=sm_61
+#GPUARCHFLAGS += -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 #uncomment for compatability
+COMPILEFLAGS = --compiler-options -fopenmp
+LIBCOMPILEFLAGS = --compiler-options -fPIC
+
+VPATH = src include
+INCLUDEPATH = include
+BUILDPATH = build
+
+TESTLIBS= -lcusparse
 
 
-spmv: spmv.o serial_tools.o
-	$(NVCC) -o spmv  $(CUDAFLAGS) $(LIBS) --compiler-options $(CXXFLAGS) spmv.o serial_tools.o
+spmvtest: $(BUILDPATH)/lib/libspmv.so
+	$(NVCC) -I $(INCLUDEPATH) $(COMPILEFLAGS) $(GPUARCHFLAGS) -L$(BUILDPATH)/lib -lspmv $(TESTLIBS) -o $(BUILDPATH)/test/spmvtest src/test/compare_spmv.cu
+	cp include/spmv.h build/include/spmv.h
 
-spmv.o : spmv.cu serial_tools.h
-	$(NVCC) -c $(CUDAFLAGS)  spmv.cu
-serial_tools.cpp: serial_tools.h
+$(BUILDPATH)/lib/libspmv.so : ricsr.o utils.o
+	$(NVCC) -I $(INCLUDEPATH) $(COMPILEFLAGS) $(LIBCOMPILEFLAGS) $(GPUARCHFLAGS) -shared -o $(BUILDPATH)/lib/libspmv.so ricsr.o utils.o
+
+ricsr.o : ricsr.cu utils.h 
+	$(NVCC) -c -I $(INCLUDEPATH) $(COMPILEFLAGS) $(LIBCOMPILEFLAGS) $(GPUARCHFLAGS) src/ricsr.cu
+
+utils.o : utils.cpp utils.h
+	$(NVCC) -c -I $(INCLUDEPATH) $(COMPILEFLAGS) $(LIBCOMPILEFLAGS) $(GPUARCHFLAGS) src/utils.cpp
 
 clean:
 	rm -rf *.o

@@ -19,7 +19,6 @@ struct csr {
 	int m;
 	int n;
 	int nnz;
-	int m_padded;
 	int * rowsts; //size m
 	int * cols; //size nnz
 	float * vals; //size nnz
@@ -34,22 +33,25 @@ struct ell {
 	float * vals;
 };
 
-struct ricsr {
-	struct csr** csrs;
+struct rell {
+	struct ell ** ells;
 	int numrib;
 	int ribwidth;
-	int m;
+	int m_padded;
 };
 
 struct gpu_data {
-	struct csr ** csrs;
+	struct ell ** ells;
 	int numrib;
 	int * devribs;
 	float ** x_slices;
-	int m;
+	int * rib_ens;
 	int m_padded;
-	int ** row_ranges;
-	int fullribwidth;
+};
+
+struct rhyb {
+	struct rell * rell;
+	struct csr * csr;
 };
 
 /* FUNCTION DECLARATIONS */
@@ -67,7 +69,7 @@ int * random_sorted_list(int, int);
 int compare_int(const void*, const void*);
 struct coo real_mm_to_coo(const char *);
 void print_coo_format(struct coo);
-struct ricsr coo_to_ricsr(struct coo, int, int);
+struct rell coo_to_rell(struct coo, int, int);
 float ** slice_x(float *, int, int, int);
 float * gen_rand_x(int, float, float);
 int * count_csr_rowlens(struct csr);
@@ -77,11 +79,11 @@ struct csr coo_to_csr(struct coo);
 void free_coo(struct coo);
 void print_arr(float *, int, int);
 int coo_is_sorted(struct coo);
-int arrs_are_same(float *, float *, int, float);
+int arrs_are_same(float *, float *, int);
 int round_val(int, int);
 void print_coo(struct coo);
 void print_int_arr(int *, int, int);
-void print_ricsr_stats(struct ricsr);
+void print_rell_stats(struct rell);
 
 
 #endif /* SERIAL_TOOLS_H */
