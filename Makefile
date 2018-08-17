@@ -1,8 +1,10 @@
 CC=g++
 NVCC=nvcc
 CXXFLAGS= -fopenmp
-CUDAFLAGS= -arch=compute_61 -code=sm_61
+CUDAFLAGS= -gencode arch=compute_61,code=sm_61
+#CUDAFLAGS += -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 #uncomment for compatability
 LIBS= -lcusparse
+
 
 spmv: spmv.o serial_tools.o
 	$(NVCC) -o spmv  $(CUDAFLAGS) $(LIBS) --compiler-options $(CXXFLAGS) spmv.o serial_tools.o
