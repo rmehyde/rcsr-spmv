@@ -6,4 +6,4 @@ Simply `make` the project and it will build a shared library as well as a test a
 The test application can be run with `build/test/spmvtest matrixfile.mtx` where `matrixfile.mtx` is a real Matrix Market exchange format file. This will run a verbose single execution of SpMV using a randomly generated **x** vector, with both the RiCSR algorithm and NVIDIA's cuSPARSE library.
 
 ### Using the library
-Unfortunately complete documentation is not available at this time, but I encourage you to look at the `src/test/compare_spmv.cu` program to get a feel for usage.
+While complete documentation is not available at this time, I encourage you to look at the `src/test/compare_spmv.cu` program to get a feel for usage.
