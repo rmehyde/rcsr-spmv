@@ -327,7 +327,6 @@ void print_coo_format(struct coo arr) {
 	printf("\n\n");
 }
 
-
 struct ricsr coo_to_ricsr(struct coo arr, int ribbon_size, int blocksize) {
 	// rounded down
 	int num_ribbons = arr.n/ribbon_size;
@@ -468,7 +467,7 @@ float ** slice_x(float * arr, int n, int ribbon_size, int coalsz) {
 	// process full-sized slices
 	for(int i=0; i<num_ribbons; i++) {
 		float * slice = (float *)malloc(sizeof(float)*ribbon_size);
-		while(s<i*ribbon_size) {
+		while(s<(i+1)*ribbon_size) {
 			slice[s-i*ribbon_size] = arr[s];
 			s++;
 		}

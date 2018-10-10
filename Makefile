@@ -2,7 +2,7 @@ NVCC=nvcc
 
 GPUARCHFLAGS= -gencode arch=compute_61,code=sm_61
 #GPUARCHFLAGS += -gencode arch=compute_20,code=sm_20 -gencode arch=compute_35,code=sm_35 #uncomment for compatability
-COMPILEFLAGS = --compiler-options -fopenmp
+COMPILEFLAGS = -g --compiler-options -fopenmp
 LIBCOMPILEFLAGS = --compiler-options -fPIC
 
 VPATH = src include

@@ -216,7 +216,7 @@ void ricsr_spmv(int numdevices, struct gpu_data dcontainer, int m, float * resul
 		for(int r=dcontainer.devribs[d]; r<dcontainer.devribs[d+1]; r++) {
 			cudaStat1 = cudaMalloc(&(ribbon_results[r]), dcontainer.m_padded*sizeof(float));
 			if(cudaStat1 != cudaSuccess) {
-				printf("ERROR: filed to allocated memory on device %d for ribbon %d result array\n", d, r);
+				printf("ERROR: failed to allocated memory on device %d for ribbon %d result array\n", d, r);
 			}
 		}
 	}

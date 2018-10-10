@@ -105,10 +105,12 @@ int main(int argc, char * argv[]) {
 	// generate and slice an x vector
 	snprintf(logbuf, 512, "generating random x");
 	printlog(1);
+	srand(100);
 	float * x = gen_rand_x(arr_coo.n, 0.0, 2.0);
 	snprintf(logbuf, 512, "slicing x vector");
 	printlog(1);
 	float ** slicedx = slice_x(x, arr_coo.n, ribwidth, 32);
+//	free(x);
 
 	// move data to gpu
 	float balance_arr[] = {1.0};
