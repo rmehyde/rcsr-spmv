@@ -36,7 +36,6 @@ __global__ void ComputeRibbon(int * rowsts, int * cols, float * vals, float * d_
 	if(ribwidth%blockDim.x != 0)
 		max_iters++;
 	for(int i=0; i<max_iters; i++) {
-//		printf("moving index %d of slice to shared memory (max_iters = %d)\n", i*blockDim.x+thread, max_iters);
 		x_slice[i*blockDim.x+thread] = d_xslice[i*blockDim.x+thread];
 	}
 	__syncthreads();
@@ -233,12 +232,6 @@ void ricsr_spmv(int numdevices, struct gpu_data dcontainer, int m, float * resul
 		for(int r=dcontainer.devribs[devid]; r<dcontainer.devribs[devid+1]; r++) {
 			struct csr devrib = *(dcontainer.csrs[r]);
 			int ribwidth = devrib.n;
-
-			if(VERBOSE) {
-//				printf("\nrowsts: %p\ncols: %p\nvals: %p\nx_slices[r]: %p\nribbon_results[r]: %p\n\n", devrib.rowsts, devrib. cols, devrib.vals, dcontainer.x_slices[r], ribbon_results[r]);
-			}
-
-
 			ComputeRibbon<<<1,BLOCKSIZE>>>(devrib.rowsts, devrib.cols, devrib.vals, dcontainer.x_slices[r], ribwidth, r, dcontainer.fullribwidth, dcontainer.row_ranges[r], ribbon_results[r]);
 		}
 		// now sum all the ribbons on this device
@@ -274,6 +267,8 @@ void ricsr_spmv(int numdevices, struct gpu_data dcontainer, int m, float * resul
 			change this else statement from this annoying message to an actual solution to this problem that involves reallocating some memory \
 			on that device. Thank you.\n");
 	}
+	snprintf(logbuf, 512, "copying RiCSR result back to host");
+	printlog(1);
 	// finally copy our result to the desired place on host
 	cudaStat1 = cudaMemcpy(result, ribbon_results[0], m*sizeof(float), cudaMemcpyDeviceToHost);
 }

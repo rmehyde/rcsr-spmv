@@ -59,7 +59,6 @@ struct cusparse_data move_cusparse_data_to_device(struct coo arr_coo, float * x)
 	// cusparse setup
 	cusparseStatus_t status;
 	cusparseHandle_t handle = 0;
-	cusparseCreate(&handle);
 	cusparseMatDescr_t descriptor = 0;
 
 	float alpha = 1.0;
@@ -71,7 +70,7 @@ struct cusparse_data move_cusparse_data_to_device(struct coo arr_coo, float * x)
 		printf("cuSPARSE environment initialization failed, exiting\n");
 		return;
 	}
-	cusparseCreateMatDescr(&descriptor);
+	status = cusparseCreateMatDescr(&descriptor);
 	if(status != CUSPARSE_STATUS_SUCCESS) {
 		printf("cuSPARSE matrix descriptor initialization failed, exiting\n");
 		return;
