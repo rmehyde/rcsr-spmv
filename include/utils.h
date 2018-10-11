@@ -53,6 +53,8 @@ struct gpu_data {
 };
 
 
+
+
 /* FUNCTION DECLARATIONS */
 float * trivial_dense(float *, float *, int, int);
 float * trivial_coo(int *, int *, float *, float *, int, int, int);

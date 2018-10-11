@@ -560,7 +560,14 @@ void free_csr(struct csr arr) {
 
 int arrs_are_same(float * a, float * b, int size, float maxerr) {
 	for(int i=0; i<size; i++) {
-		if (!(abs(a[i] /b[i]) > (1.0f-maxerr) && abs(a[i]/b[i]) < (1.0f+maxerr)) && !(a[i] == 0.0f && b[i] == 0.0f)) {
+		// if either are zero just check difference
+		if (a[i] == 0.0f || b[i] == 0.0f) {
+			if (abs(a[i] - b[i]) > maxerr) {
+				printf("ERROR: value in array a not equal to in b:\na[%d] = %f\nb[%d] = %f\n", i, a[i], i, b[i], a[i]/b[i]);
+				return 0;
+			}
+		}
+		else if (!(abs(a[i] /b[i]) > (1.0f-maxerr) && abs(a[i]/b[i]) < (1.0f+maxerr))) {
 			printf("ERROR: value in array a not equal to in b:\na[%d] = %f\nb[%d] = %f\n", i, a[i], i, b[i], a[i]/b[i]);
 			return 0;
 		}

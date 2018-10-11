@@ -52,6 +52,17 @@ struct gpu_data {
 	int fullribwidth;
 };
 
+struct cusparse_data {
+	int * d_csrRowPtr;
+	int * d_colInds;
+	float * d_vals;
+	float * d_y;
+	float * d_x;
+	int m;
+	int n;
+	int nnz;
+};
+
 struct sysinfo {
 	int numdevices; // number of devices in the system
 	int sharedsize; // minimum constant memory size in bytes of any device on the system

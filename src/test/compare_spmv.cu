@@ -6,14 +6,8 @@
 #define VERBOSE 1
 #define BLOCKSIZE 32
 
- void execute_cusparse_spmv(struct coo arr_coo, float * x, float * res) {
-	// cusparse setup
+struct cusparse_data move_cusparse_data_to_device(struct coo arr_coo, float * x) {
 	cudaError_t cudaStat1, cudaStat2, cudaStat3, cudaStat4, cudaStat5;
-	cusparseStatus_t status;
-	cusparseHandle_t handle = 0;
-	cusparseCreate(&handle);
-	cusparseMatDescr_t descriptor = 0;
-
 	// allocate device memory for CSR array, y, and x
 	int * d_csrRowPtr;
 	int * d_colInds;
@@ -26,12 +20,8 @@
 	cudaStat4 = cudaMalloc(&d_y, arr_coo.m*sizeof(float));
 	cudaStat5 = cudaMalloc(&d_x, arr_coo.n*sizeof(float));
 	if(!((cudaStat1 == cudaSuccess) && (cudaStat2 == cudaSuccess) && (cudaStat3 == cudaSuccess) && (cudaStat4 == cudaSuccess) && (cudaStat5 == cudaSuccess))) {
-		printf("cuSPARSE: Device memory allocation failed, exiting\n");
-		return;
+		printf("cuSPARSE: Device memory allocation failed\n");
 	}
-
-	float alpha = 1.0;
-	float beta = 0.0;
 
 	// grab metavars, convert array to csr and free coo
 	int m = arr_coo.m;
@@ -46,9 +36,34 @@
 	cudaStat3 = cudaMemcpy(d_vals, arr_csr.vals, nnz*sizeof(float), cudaMemcpyHostToDevice);
 	cudaStat4 = cudaMemcpy(d_x, x, n*sizeof(float), cudaMemcpyHostToDevice);
 	if(!((cudaStat1 == cudaSuccess) && (cudaStat2 == cudaSuccess) && (cudaStat3 == cudaSuccess) && (cudaStat4 == cudaSuccess))) {
-		printf("cuSPARSE: Initial memory copy failed, exiting\n");
-		return;
+		printf("cuSPARSE: Initial memory copy failed\n");
 	}
+
+	// put into a struct and return
+	struct cusparse_data ret;
+	ret.d_csrRowPtr = d_csrRowPtr;
+	ret.d_colInds = d_colInds;
+	ret.d_vals = d_vals;
+	ret.d_y = d_y;
+	ret.d_x = d_x;
+	ret.m = m;
+	ret.n = n;
+	ret.nnz = nnz;
+	return ret;
+}
+
+ void execute_cusparse_spmv(struct cusparse_data container, float * res) {
+ 	snprintf(logbuf, 512, "setting up cuSPARSE environment");
+ 	printlog(1);
+ 	cudaError_t cudaStat1;
+	// cusparse setup
+	cusparseStatus_t status;
+	cusparseHandle_t handle = 0;
+	cusparseCreate(&handle);
+	cusparseMatDescr_t descriptor = 0;
+
+	float alpha = 1.0;
+	float beta = 0.0;
 
 	// initialize cusparse
 	status = cusparseCreate(&handle);
@@ -64,19 +79,32 @@
 	cusparseSetMatType(descriptor, CUSPARSE_MATRIX_TYPE_GENERAL);
 	cusparseSetMatIndexBase(descriptor, CUSPARSE_INDEX_BASE_ZERO);
 
+	snprintf(logbuf, 512, "calling cuSPARSE spmv");
+	printlog(1);
+
 	// execute spmv!
-	status = cusparseScsrmv(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, m, n, nnz, &alpha, descriptor, d_vals, d_csrRowPtr, d_colInds, d_x, &beta, d_y);
+	status = cusparseScsrmv(handle, CUSPARSE_OPERATION_NON_TRANSPOSE, container.m, container.n, container.nnz, &alpha, descriptor, container.d_vals, container.d_csrRowPtr, container.d_colInds, container.d_x, &beta, container.d_y);
 	if(status != CUSPARSE_STATUS_SUCCESS) {
 		printf("cuSPARSE SpMV function execution failed! exiting\n");
 		return;
 	}
 
+	snprintf(logbuf, 512, "copying result from GPU");
+	printlog(1);
+
 	// copy result back
-	cudaStat1 = cudaMemcpy(res, d_y, m*sizeof(float), cudaMemcpyDeviceToHost);
+	cudaStat1 = cudaMemcpy(res, container.d_y, container.m*sizeof(float), cudaMemcpyDeviceToHost);
 	if(cudaStat1 != cudaSuccess) {
 		printf("cuSPARSE: Error copy result back to host, exiting\n");
 		return;
 	}
+	
+	// free memory
+	cudaFree(container.d_csrRowPtr);
+	cudaFree(container.d_colInds);
+	cudaFree(container.d_vals);
+	cudaFree(container.d_y);
+	cudaFree(container.d_x);
 }
 
 int main(int argc, char * argv[]) {
@@ -85,6 +113,7 @@ int main(int argc, char * argv[]) {
 		printf("Usage: spmv [matrix market file]\n");
 		return 1;
 	}
+	printf("\n");
 	// initialize timing and message variables
 	logbuf = (char *)malloc(512 * sizeof(char));
 	clock_gettime(CLOCK_REALTIME, &wallstart);
@@ -126,9 +155,12 @@ int main(int argc, char * argv[]) {
 	float * ricsr_res = (float *)malloc(sizeof(float)*round_val(arr_coo.m, BLOCKSIZE));
 
 	// do the cusparse and store it there
-	snprintf(logbuf, 512, "executing cuSPARSE matrix-vector multiplication");
+	snprintf(logbuf, 512, "moving data to GPU for cuSPARSE");
 	printlog(1);
-	execute_cusparse_spmv(arr_coo, x, cusparse_res);
+	struct cusparse_data cusparse_container = move_cusparse_data_to_device(arr_coo, x);
+	snprintf(logbuf, 512, "executing cuSPARSE SpMV");
+	printlog(1);
+	execute_cusparse_spmv(cusparse_container, cusparse_res);
 
 	cudaError_t cudaStat1 = cudaDeviceSynchronize();
 	if(!cudaStat1 == cudaSuccess) {
